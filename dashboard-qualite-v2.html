@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pilotage Qualité · Coachs</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#07090f; --s1:#0f1623; --s2:#141e2e; --s3:#1a2540;
+  --b1:#1e2d45; --b2:#243352;
+  --cyan:#00e5ff; --amber:#ffab00; --green:#00e676;
+  --red:#ff3d71; --purple:#b388ff; --pink:#ff4081;
+  --txt:#dce8f8; --muted:#4d6a8a; --muted2:#3a5272;
+  --font-h:'Syne',sans-serif; --font-m:'Space Mono',monospace;
+  --r:2px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:var(--font-h);min-height:100vh;overflow-x:hidden}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 10% 0%, rgba(0,229,255,.04) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 90% 100%, rgba(179,136,255,.04) 0%, transparent 70%),
+    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,229,255,.025) 39px, rgba(0,229,255,.025) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,229,255,.025) 39px, rgba(0,229,255,.025) 40px);
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  position:relative;z-index:20;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 28px;
+  border-bottom:1px solid var(--b1);
+  background:rgba(7,9,15,.92);backdrop-filter:blur(10px);
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-icon{
+  width:34px;height:34px;
+  border:1.5px solid var(--cyan);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;
+  background:rgba(0,229,255,.06);
+}
+.brand-name{font-size:14px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.brand-tag{font-family:var(--font-m);font-size:9px;color:var(--muted);text-transform:uppercase;margin-top:2px;letter-spacing:.08em}
+
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{
+  font-family:var(--font-m);font-size:10px;text-transform:uppercase;letter-spacing:.08em;
+  padding:8px 18px;border:1px solid transparent;background:transparent;
+  color:var(--muted);cursor:pointer;transition:all .2s;
+}
+.nav-tab:hover{color:var(--txt);border-color:var(--b2)}
+.nav-tab.active{color:var(--cyan);border-color:var(--cyan);background:rgba(0,229,255,.06)}
+.nav-tab .tab-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:16px;height:16px;border-radius:50%;
+  background:var(--red);color:#fff;font-size:8px;margin-left:6px;font-family:var(--font-m);
+}
+
+.topbar-right{display:flex;align-items:center;gap:16px}
+.live-pill{
+  display:flex;align-items:center;gap:6px;
+  font-family:var(--font-m);font-size:10px;color:var(--green);
+  padding:5px 12px;border:1px solid rgba(0,230,118,.2);background:rgba(0,230,118,.05);
+}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,230,118,.5)}50%{opacity:.7;box-shadow:0 0 0 5px rgba(0,230,118,0)}}
+
+/* ── PAGES ── */
+.page{display:none;position:relative;z-index:1}
+.page.active{display:block}
+
+/* ══════════════════════════════
+   PAGE 1 — DASHBOARD
+══════════════════════════════ */
+.dash-wrap{padding:24px 28px;display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+
+/* KPI row */
+.kpi-row{grid-column:span 12;display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.kpi{
+  background:var(--s1);border:1px solid var(--b1);padding:16px 18px;
+  position:relative;overflow:hidden;cursor:default;
+  transition:border-color .25s,transform .2s;
+  animation:fadeUp .5s both;
+}
+.kpi:hover{transform:translateY(-2px)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.c1::before{background:var(--cyan)} .kpi:hover.c1{border-color:var(--cyan)}
+.kpi.c2::before{background:var(--amber)} .kpi:hover.c2{border-color:var(--amber)}
+.kpi.c3::before{background:var(--green)} .kpi:hover.c3{border-color:var(--green)}
+.kpi.c4::before{background:var(--purple)} .kpi:hover.c4{border-color:var(--purple)}
+.kpi.c5::before{background:var(--red)} .kpi:hover.c5{border-color:var(--red)}
+.kpi-lbl{font-family:var(--font-m);font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px}
+.kpi-val{font-family:var(--font-m);font-size:28px;font-weight:700;line-height:1;letter-spacing:-.02em}
+.kpi.c1 .kpi-val{color:var(--cyan)} .kpi.c2 .kpi-val{color:var(--amber)}
+.kpi.c3 .kpi-val{color:var(--green)} .kpi.c4 .kpi-val{color:var(--purple)}
+.kpi.c5 .kpi-val{color:var(--red)}
+.kpi-delta{display:inline-flex;align-items:center;gap:3px;margin-top:6px;font-family:var(--font-m);font-size:9px;padding:2px 7px}
+.kpi-delta.up{background:rgba(0,230,118,.08);color:var(--green)}
+.kpi-delta.dn{background:rgba(255,61,113,.08);color:var(--red)}
+.kpi-delta.eq{background:rgba(77,106,138,.1);color:var(--muted)}
+.kpi-ghost{position:absolute;right:14px;bottom:10px;font-size:26px;opacity:.1}
+
+/* Blocks */
+.block{background:var(--s1);border:1px solid var(--b1);padding:20px;animation:fadeUp .5s both;transition:border-color .25s}
+.block:hover{border-color:rgba(0,229,255,.2)}
+.block-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+.block-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em}
+.block-sub{font-family:var(--font-m);font-size:9px;color:var(--muted);margin-top:3px;text-transform:uppercase}
+.chip{font-family:var(--font-m);font-size:9px;padding:3px 10px;border:1px solid var(--b2);color:var(--muted);text-transform:uppercase}
+
+.b-eval{grid-column:span 7;animation-delay:.1s}
+.b-sat{grid-column:span 5;animation-delay:.15s}
+.b-allo{grid-column:span 4;animation-delay:.2s}
+.b-carto{grid-column:span 8;animation-delay:.25s}
+
+.ch-wrap{position:relative;height:210px}
+
+/* Sat */
+.sat-layout{display:grid;grid-template-columns:1fr 1fr;gap:12px;height:200px}
+.donut-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+.donut-center{position:absolute;text-align:center;pointer-events:none}
+.donut-num{font-family:var(--font-m);font-size:22px;font-weight:700;color:var(--green)}
+.donut-lbl{font-family:var(--font-m);font-size:8px;color:var(--muted);text-transform:uppercase}
+.sat-leg{display:flex;flex-direction:column;justify-content:center;gap:10px}
+.sat-li{display:flex;align-items:center;gap:8px}
+.sat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sat-nm{font-family:var(--font-m);font-size:10px;color:var(--muted)}
+.sat-pct{font-family:var(--font-m);font-size:12px;font-weight:700;margin-left:auto}
+
+/* Allo bars */
+.allo-bars{display:flex;flex-direction:column;gap:13px}
+.allo-row-hd{display:flex;justify-content:space-between;margin-bottom:4px}
+.allo-nm{font-family:var(--font-m);font-size:9px;color:var(--muted);text-transform:uppercase}
+.allo-v{font-family:var(--font-m);font-size:9px;font-weight:700;color:var(--amber)}
+.allo-track{height:5px;background:var(--b1)}
+.allo-fill{height:100%;transition:width 1s cubic-bezier(.22,1,.36,1)}
+
+/* Agent table */
+.ag-table{width:100%;border-collapse:collapse}
+.ag-table th{font-family:var(--font-m);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:0 10px 9px;text-align:left;border-bottom:1px solid var(--b1)}
+.ag-table td{padding:9px 10px;font-family:var(--font-m);font-size:10px;border-bottom:1px solid rgba(30,45,69,.5);vertical-align:middle}
+.ag-table tr:last-child td{border-bottom:none}
+.ag-table tr:hover td{background:rgba(0,229,255,.025)}
+.ag-name{font-family:var(--font-h);font-size:11px;font-weight:700}
+.sc-bar{height:3px;background:var(--b1);margin-top:3px}
+.sc-fill{height:100%}
+.tag{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;font-family:var(--font-m);font-size:8px;text-transform:uppercase;border:1px solid;margin:1px}
+.tag.done{border-color:rgba(0,230,118,.35);color:var(--green);background:rgba(0,230,118,.05)}
+.tag.pend{border-color:rgba(255,171,0,.35);color:var(--amber);background:rgba(255,171,0,.05)}
+.tag.crit{border-color:rgba(255,61,113,.35);color:var(--red);background:rgba(255,61,113,.05)}
+.ecart-pill{display:inline-block;padding:1px 7px;font-family:var(--font-m);font-size:8px;background:rgba(179,136,255,.08);color:var(--purple);border:1px solid rgba(179,136,255,.2);margin:1px}
+.scroll-x{overflow-x:auto}
+.scroll-x::-webkit-scrollbar{height:3px}
+.scroll-x::-webkit-scrollbar-track{background:var(--b1)}
+.scroll-x::-webkit-scrollbar-thumb{background:var(--muted)}
+.empty-row td{text-align:center;color:var(--muted);font-size:10px;padding:20px!important}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ══════════════════════════════
+   PAGE 2 — SAISIE COACH
+══════════════════════════════ */
+.form-page{max-width:820px;margin:0 auto;padding:32px 28px}
+.form-hero{
+  margin-bottom:28px;padding:22px 24px;
+  background:linear-gradient(135deg,rgba(0,229,255,.06) 0%,rgba(179,136,255,.04) 100%);
+  border:1px solid rgba(0,229,255,.15);
+  display:flex;align-items:center;gap:16px;
+}
+.form-hero-icon{font-size:32px}
+.form-hero-title{font-size:18px;font-weight:800}
+.form-hero-sub{font-family:var(--font-m);font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:4px}
+
+.form-section{margin-bottom:22px}
+.section-label{
+  font-family:var(--font-m);font-size:9px;text-transform:uppercase;letter-spacing:.14em;
+  color:var(--cyan);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--b2)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid.tri{grid-template-columns:1fr 1fr 1fr}
+.form-grid.full{grid-template-columns:1fr}
+
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-family:var(--font-m);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.field input,.field select,.field textarea{
+  background:var(--s2);border:1px solid var(--b1);color:var(--txt);
+  font-family:var(--font-m);font-size:11px;padding:10px 13px;
+  outline:none;transition:border-color .2s;border-radius:0;width:100%;
+  -webkit-appearance:none;
+}
+.field select{cursor:pointer}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--cyan)}
+.field textarea{resize:vertical;min-height:70px;line-height:1.6}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted2)}
+
+/* Score slider */
+.score-wrap{position:relative}
+.score-display{
+  position:absolute;right:0;top:-2px;
+  font-family:var(--font-m);font-size:18px;font-weight:700;
+  transition:color .3s;
+}
+input[type=range]{
+  width:100%;height:4px;background:var(--b1);outline:none;cursor:pointer;
+  -webkit-appearance:none;margin-top:28px;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;
+  border-radius:50%;background:var(--cyan);border:2px solid var(--bg);cursor:pointer;
+  transition:transform .2s;
+}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.3)}
+
+/* Écarts checklist */
+.ecarts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ecart-check{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 10px;border:1px solid var(--b1);cursor:pointer;
+  font-family:var(--font-m);font-size:9px;text-transform:uppercase;letter-spacing:.04em;
+  transition:all .2s;user-select:none;color:var(--muted);
+}
+.ecart-check:hover{border-color:var(--purple);color:var(--txt)}
+.ecart-check.selected{border-color:var(--purple);background:rgba(179,136,255,.08);color:var(--purple)}
+.ecart-check input{display:none}
+.ecart-ico{font-size:13px}
+
+/* Satisfaction radio */
+.sat-radios{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.sat-radio{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:12px 8px;border:1px solid var(--b1);cursor:pointer;
+  transition:all .2s;user-select:none;
+}
+.sat-radio input{display:none}
+.sat-radio-ico{font-size:22px}
+.sat-radio-lbl{font-family:var(--font-m);font-size:8px;text-transform:uppercase;color:var(--muted)}
+.sat-radio.selected.s-tres{border-color:var(--green);background:rgba(0,230,118,.06)}
+.sat-radio.selected.s-sat{border-color:var(--cyan);background:rgba(0,229,255,.06)}
+.sat-radio.selected.s-neu{border-color:var(--amber);background:rgba(255,171,0,.06)}
+.sat-radio.selected.s-ins{border-color:var(--red);background:rgba(255,61,113,.06)}
+
+/* Boutons */
+.btn-row{display:flex;gap:12px;align-items:center;margin-top:6px}
+.btn{
+  font-family:var(--font-m);font-size:10px;text-transform:uppercase;letter-spacing:.1em;
+  padding:11px 26px;border:none;cursor:pointer;transition:all .2s;
+}
+.btn-primary{background:var(--cyan);color:var(--bg);font-weight:700}
+.btn-primary:hover{background:#33eaff;transform:translateY(-1px)}
+.btn-ghost{background:transparent;border:1px solid var(--b2);color:var(--muted)}
+.btn-ghost:hover{border-color:var(--txt);color:var(--txt)}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:28px;right:28px;z-index:999;
+  padding:14px 22px;background:var(--s2);border:1px solid var(--green);
+  font-family:var(--font-m);font-size:11px;color:var(--green);
+  transform:translateY(20px);opacity:0;
+  transition:all .3s cubic-bezier(.22,1,.36,1);pointer-events:none;
+}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* ══════════════════════════════
+   PAGE 3 — HISTORIQUE
+══════════════════════════════ */
+.hist-page{padding:24px 28px}
+.hist-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.hist-title{font-size:15px;font-weight:800}
+.hist-actions{display:flex;gap:8px}
+
+.hist-filters{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.hist-filter{
+  font-family:var(--font-m);font-size:9px;text-transform:uppercase;letter-spacing:.06em;
+  padding:5px 14px;border:1px solid var(--b1);background:transparent;
+  color:var(--muted);cursor:pointer;transition:all .2s;
+}
+.hist-filter.active,.hist-filter:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.05)}
+
+.hist-table{width:100%;border-collapse:collapse}
+.hist-table th{font-family:var(--font-m);font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:0 12px 10px;text-align:left;border-bottom:1px solid var(--b1)}
+.hist-table td{padding:10px 12px;font-family:var(--font-m);font-size:10px;border-bottom:1px solid rgba(30,45,69,.5);vertical-align:middle}
+.hist-table tr:hover td{background:rgba(0,229,255,.02)}
+.hist-table tr:last-child td{border-bottom:none}
+
+.del-btn{
+  background:transparent;border:1px solid rgba(255,61,113,.2);color:var(--red);
+  font-family:var(--font-m);font-size:8px;padding:3px 8px;cursor:pointer;
+  text-transform:uppercase;transition:all .2s;
+}
+.del-btn:hover{background:rgba(255,61,113,.1);border-color:var(--red)}
+
+.empty-state{
+  text-align:center;padding:60px 20px;
+  font-family:var(--font-m);font-size:11px;color:var(--muted);text-transform:uppercase;
+}
+.empty-state .es-icon{font-size:40px;margin-bottom:12px;opacity:.3}
+
+/* Footer */
+footer{
+  position:relative;z-index:1;padding:12px 28px;
+  border-top:1px solid var(--b1);
+  display:flex;justify-content:space-between;
+  font-family:var(--font-m);font-size:8px;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon">📊</div>
+    <div>
+      <div class="brand-name">Pilotage Qualité</div>
+      <div class="brand-tag">Centre de Contact · Casablanca</div>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchPage('dash')">📈 Tableau de bord</button>
+    <button class="nav-tab" onclick="switchPage('form')">✏️ Saisie Évaluation</button>
+    <button class="nav-tab" onclick="switchPage('hist')">🗂 Historique <span class="tab-badge" id="histBadge">0</span></button>
+  </div>
+  <div class="topbar-right">
+    <div class="live-pill"><span class="pulse"></span> Live</div>
+  </div>
+</div>
+
+<!-- ══ PAGE 1 : DASHBOARD ══ -->
+<div id="page-dash" class="page active">
+<div class="dash-wrap">
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi c1"><div class="kpi-lbl">Évaluations / Semaine</div><div class="kpi-val" id="kpi-evals">0</div><div class="kpi-delta up" id="kpi-evals-d">—</div><div class="kpi-ghost">📋</div></div>
+    <div class="kpi c2"><div class="kpi-lbl">Insertions Allobrain</div><div class="kpi-val" id="kpi-allo">0</div><div class="kpi-delta up">↑ grilles renseignées</div><div class="kpi-ghost">🧠</div></div>
+    <div class="kpi c3"><div class="kpi-lbl">Moyenne Qualité</div><div class="kpi-val" id="kpi-moy">—</div><div class="kpi-delta" id="kpi-moy-d">—</div><div class="kpi-ghost">🎯</div></div>
+    <div class="kpi c4"><div class="kpi-lbl">Agents suivis</div><div class="kpi-val" id="kpi-agents">0</div><div class="kpi-delta eq">→ actifs ce mois</div><div class="kpi-ghost">👥</div></div>
+    <div class="kpi c5"><div class="kpi-lbl">Plans d'Action actifs</div><div class="kpi-val" id="kpi-pa">0</div><div class="kpi-delta" id="kpi-pa-d">—</div><div class="kpi-ghost">⚡</div></div>
+  </div>
+
+  <!-- Évaluations semaine -->
+  <div class="block b-eval">
+    <div class="block-head">
+      <div><div class="block-title">Évaluations par Semaine</div><div class="block-sub">7 dernières semaines · objectif 300/sem</div></div>
+      <div class="chip">S-6 → Actuelle</div>
+    </div>
+    <div class="ch-wrap"><canvas id="evalChart"></canvas></div>
+  </div>
+
+  <!-- Satisfaction -->
+  <div class="block b-sat">
+    <div class="block-head">
+      <div><div class="block-title">Satisfaction Client</div><div class="block-sub">CSAT global · toutes évaluations</div></div>
+    </div>
+    <div class="sat-layout">
+      <div class="donut-wrap"><canvas id="satChart"></canvas>
+        <div class="donut-center"><div class="donut-num" id="sat-pct">—</div><div class="donut-lbl">Satisfait+</div></div>
+      </div>
+      <div class="sat-leg" id="sat-leg"></div>
+    </div>
+  </div>
+
+  <!-- Allobrain par grille -->
+  <div class="block b-allo">
+    <div class="block-head">
+      <div><div class="block-title">Insertions Allobrain</div><div class="block-sub">Par grille d'évaluation</div></div>
+    </div>
+    <div class="allo-bars" id="alloBars"></div>
+  </div>
+
+  <!-- Cartographie agents -->
+  <div class="block b-carto">
+    <div class="block-head">
+      <div><div class="block-title">Cartographie des Agents</div><div class="block-sub">Scores · Écarts · Plans d'action</div></div>
+      <div style="display:flex;gap:6px"><span class="tag done">✓ Clôturé</span><span class="tag pend">⏳ En cours</span><span class="tag crit">⚠ Critique</span></div>
+    </div>
+    <div class="scroll-x">
+      <table class="ag-table">
+        <thead><tr><th>Agent</th><th>Score Moy.</th><th>Évals</th><th>Écarts identifiés</th><th>Plan d'action</th><th>Statut</th></tr></thead>
+        <tbody id="cartoBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══ PAGE 2 : SAISIE ══ -->
+<div id="page-form" class="page">
+<div class="form-page">
+  <div class="form-hero">
+    <div class="form-hero-icon">✏️</div>
+    <div>
+      <div class="form-hero-title">Nouvelle Fiche d'Évaluation</div>
+      <div class="form-hero-sub">Coach · Remplissez les informations de la session qualité</div>
+    </div>
+  </div>
+
+  <!-- Section 1 : Identité -->
+  <div class="form-section">
+    <div class="section-label">01 — Identification</div>
+    <div class="form-grid tri">
+      <div class="field">
+        <label>Nom du Coach</label>
+        <select id="f-coach">
+          <option value="">Sélectionner…</option>
+          <option>Coach Aicha</option>
+          <option>Coach Mehdi</option>
+          <option>Coach Sanae</option>
+          <option>Coach Khalid</option>
+          <option>Coach Nadia</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Nom de l'Agent</label>
+        <input type="text" id="f-agent" placeholder="Ex: Youssef Benali">
+      </div>
+      <div class="field">
+        <label>Date de l'évaluation</label>
+        <input type="date" id="f-date">
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2 : Grille & Score -->
+  <div class="form-section">
+    <div class="section-label">02 — Grille & Score</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Grille d'évaluation (Allobrain)</label>
+        <select id="f-grille">
+          <option value="">Sélectionner la grille…</option>
+          <option>Grille Appels Entrants</option>
+          <option>Grille Réclamations</option>
+          <option>Grille Vente / Upsell</option>
+          <option>Grille Suivi Dossier</option>
+          <option>Grille Chat / Email</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Score obtenu (sur 100)</label>
+        <div class="score-wrap">
+          <div class="score-display" id="scoreDisplay" style="color:var(--amber)">50%</div>
+          <input type="range" id="f-score" min="0" max="100" value="50" oninput="updateScore(this.value)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3 : Écarts -->
+  <div class="form-section">
+    <div class="section-label">03 — Écarts Identifiés</div>
+    <div class="ecarts-grid" id="ecartsGrid">
+      <label class="ecart-check" onclick="toggleEcart(this)"><span class="ecart-ico">👂</span>Écoute active<input type="checkbox"></label>
+      <label class="ecart-check" onclick="toggleEcart(this)"><span class="ecart-ico">🔄</span>Reformulation<input type="checkbox"></label>
+      <label class="ecart-check" onclick="toggleEcart(this)"><span class="ecart-ico">💬</span>Argumentation<input type="checkbox"></label>
+      <label class="ecart-check" onclick="toggleEcart(this)"><span class="ecart-ico">🎯</span>Qualification<input type="checkbox"></label>
+      <label class="ecart-check" onclick="toggleEcart(this)"><span class="ecart-ico">📜</span>Conformité script<input type="checkbox"></label>
+      <label class="ecart-check" onclick="toggleEcart(this)"><span class="ecart-ico">🤝</span>Empathie client<input type="checkbox"></label>
+      <label class="ecart-check" onclick="toggleEcart(this)"><span class="ecart-ico">🚧</span>Gestion objections<input type="checkbox"></label>
+      <label class="ecart-check" onclick="toggleEcart(this)"><span class="ecart-ico">🔚</span>Clôture appel<input type="checkbox"></label>
+      <label class="ecart-check" onclick="toggleEcart(this)"><span class="ecart-ico">😊</span>Ton / Politesse<input type="checkbox"></label>
+    </div>
+  </div>
+
+  <!-- Section 4 : Plan d'action -->
+  <div class="form-section">
+    <div class="section-label">04 — Plan d'Action</div>
+    <div class="form-grid full">
+      <div class="field">
+        <label>Description du plan d'action</label>
+        <textarea id="f-plan" placeholder="Décrire les actions correctives mises en place (coaching, double écoute, formation, suivi…)"></textarea>
+      </div>
+    </div>
+    <div class="form-grid" style="margin-top:14px">
+      <div class="field">
+        <label>Statut du plan</label>
+        <select id="f-statut">
+          <option value="pend">⏳ En cours</option>
+          <option value="done">✓ Clôturé</option>
+          <option value="crit">⚠ Critique / Urgent</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Inséré sur Allobrain ?</label>
+        <select id="f-allo">
+          <option value="oui">✅ Oui — insertion effectuée</option>
+          <option value="non">❌ Non — en attente</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5 : Satisfaction -->
+  <div class="form-section">
+    <div class="section-label">05 — Résultat Satisfaction Client</div>
+    <div class="sat-radios" id="satRadios">
+      <label class="sat-radio s-tres" onclick="selectSat(this,'tres_sat')"><input type="radio" name="sat"><div class="sat-radio-ico">😄</div><div class="sat-radio-lbl">Très satisfait</div></label>
+      <label class="sat-radio s-sat" onclick="selectSat(this,'sat')"><input type="radio" name="sat"><div class="sat-radio-ico">😊</div><div class="sat-radio-lbl">Satisfait</div></label>
+      <label class="sat-radio s-neu" onclick="selectSat(this,'neutre')"><input type="radio" name="sat"><div class="sat-radio-ico">😐</div><div class="sat-radio-lbl">Neutre</div></label>
+      <label class="sat-radio s-ins" onclick="selectSat(this,'insatisfait')"><input type="radio" name="sat"><div class="sat-radio-ico">😞</div><div class="sat-radio-lbl">Insatisfait</div></label>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="submitEval()">💾 Enregistrer l'évaluation</button>
+    <button class="btn btn-ghost" onclick="resetForm()">Réinitialiser</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ PAGE 3 : HISTORIQUE ══ -->
+<div id="page-hist" class="page">
+<div class="hist-page">
+  <div class="hist-head">
+    <div class="hist-title">Historique des Évaluations</div>
+    <div class="hist-actions">
+      <button class="btn btn-ghost" onclick="exportCSV()">⬇ Exporter CSV</button>
+      <button class="btn btn-ghost" style="border-color:rgba(255,61,113,.3);color:var(--red)" onclick="clearAll()">🗑 Tout effacer</button>
+    </div>
+  </div>
+  <div class="hist-filters" id="coachFilters"></div>
+  <div class="scroll-x">
+    <table class="hist-table">
+      <thead><tr><th>Date</th><th>Coach</th><th>Agent</th><th>Grille</th><th>Score</th><th>Satisfaction</th><th>Statut PA</th><th>Allobrain</th><th></th></tr></thead>
+      <tbody id="histBody"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<footer>
+  <span>Coach QA Platform · v3.0 — Formulaire intégré</span>
+  <span id="lastUpdate">Aucune saisie</span>
+  <span>Casablanca · <span id="currentDate"></span></span>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════ STATE ══════════════ */
+let evals = [];
+let satSelected = '';
+let histFilter = 'all';
+let evalChartInst = null;
+let satChartInst = null;
+
+/* ══════════════ STORAGE ══════════════ */
+async function saveData() {
+  try { await window.storage.set('qa_evals', JSON.stringify(evals)); } catch(e) {}
+}
+async function loadData() {
+  try {
+    const r = await window.storage.get('qa_evals');
+    if (r && r.value) evals = JSON.parse(r.value);
+  } catch(e) { evals = []; }
+}
+
+/* ══════════════ NAVIGATION ══════════════ */
+function switchPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-' + p).classList.add('active');
+  document.querySelectorAll('.nav-tab')[{dash:0,form:1,hist:2}[p]].classList.add('active');
+  if (p === 'dash') renderDashboard();
+  if (p === 'hist') renderHistory();
+}
+
+/* ══════════════ FORM HELPERS ══════════════ */
+function updateScore(v) {
+  const d = document.getElementById('scoreDisplay');
+  d.textContent = v + '%';
+  d.style.color = v >= 88 ? 'var(--green)' : v >= 70 ? 'var(--amber)' : 'var(--red)';
+}
+function toggleEcart(el) {
+  el.classList.toggle('selected');
+  el.querySelector('input').checked = el.classList.contains('selected');
+}
+function selectSat(el, val) {
+  document.querySelectorAll('.sat-radio').forEach(r => r.classList.remove('selected'));
+  el.classList.add('selected');
+  satSelected = val;
+}
+function resetForm() {
+  document.getElementById('f-coach').value = '';
+  document.getElementById('f-agent').value = '';
+  document.getElementById('f-date').value = '';
+  document.getElementById('f-grille').value = '';
+  document.getElementById('f-score').value = 50; updateScore(50);
+  document.querySelectorAll('.ecart-check').forEach(e => { e.classList.remove('selected'); e.querySelector('input').checked = false; });
+  document.getElementById('f-plan').value = '';
+  document.getElementById('f-statut').value = 'pend';
+  document.getElementById('f-allo').value = 'oui';
+  document.querySelectorAll('.sat-radio').forEach(r => r.classList.remove('selected'));
+  satSelected = '';
+}
+
+/* ══════════════ SUBMIT ══════════════ */
+async function submitEval() {
+  const coach = document.getElementById('f-coach').value;
+  const agent = document.getElementById('f-agent').value.trim();
+  const date  = document.getElementById('f-date').value;
+  const grille= document.getElementById('f-grille').value;
+  const score = parseInt(document.getElementById('f-score').value);
+  const plan  = document.getElementById('f-plan').value.trim();
+  const statut= document.getElementById('f-statut').value;
+  const allo  = document.getElementById('f-allo').value;
+  const sat   = satSelected;
+
+  if (!coach || !agent || !date || !grille) {
+    showToast('⚠ Veuillez remplir : Coach, Agent, Date, Grille', 'error'); return;
+  }
+
+  const ecarts = [...document.querySelectorAll('.ecart-check.selected')]
+    .map(e => e.textContent.trim().replace(/[^\w\s]/g,'').trim());
+
+  evals.push({ id: Date.now(), coach, agent, date, grille, score, ecarts, plan, statut, allo, sat });
+  await saveData();
+  updateBadge();
+  showToast('✅ Évaluation enregistrée avec succès !', 'ok');
+  resetForm();
+  renderDashboard();
+}
+
+/* ══════════════ DASHBOARD ══════════════ */
+function getWeekKey(dateStr) {
+  const d = new Date(dateStr);
+  const jan1 = new Date(d.getFullYear(), 0, 1);
+  const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+  return `S${week}`;
+}
+
+function renderDashboard() {
+  if (!evals.length) {
+    renderEmptyDash(); return;
+  }
+
+  // KPI: Évaluations
+  const thisWeek = getWeekKey(new Date().toISOString().split('T')[0]);
+  const evalsThisWeek = evals.filter(e => getWeekKey(e.date) === thisWeek).length;
+  document.getElementById('kpi-evals').textContent = evalsThisWeek;
+  document.getElementById('kpi-evals-d').textContent = evalsThisWeek >= 300 ? '✓ Objectif atteint' : `${300 - evalsThisWeek} restantes`;
+  document.getElementById('kpi-evals-d').className = 'kpi-delta ' + (evalsThisWeek >= 300 ? 'up' : 'eq');
+
+  // KPI: Allo
+  const alloCount = evals.filter(e => e.allo === 'oui').length;
+  document.getElementById('kpi-allo').textContent = alloCount;
+
+  // KPI: Moyenne
+  const avg = evals.reduce((s, e) => s + e.score, 0) / evals.length;
+  document.getElementById('kpi-moy').textContent = avg.toFixed(1) + '%';
+  const mc = document.getElementById('kpi-moy-d');
+  mc.className = 'kpi-delta ' + (avg >= 80 ? 'up' : avg >= 70 ? 'eq' : 'dn');
+  mc.textContent = avg >= 80 ? '↑ Objectif atteint' : '↓ Sous objectif';
+
+  // KPI: Agents
+  const agents = [...new Set(evals.map(e => e.agent))];
+  document.getElementById('kpi-agents').textContent = agents.length;
+
+  // KPI: Plans actifs
+  const pa = evals.filter(e => e.statut === 'pend' || e.statut === 'crit').length;
+  document.getElementById('kpi-pa').textContent = pa;
+  const crit = evals.filter(e => e.statut === 'crit').length;
+  const pad = document.getElementById('kpi-pa-d');
+  pad.textContent = crit ? `⚠ ${crit} critiques` : `${evals.filter(e=>e.statut==='done').length} clôturés`;
+  pad.className = 'kpi-delta ' + (crit ? 'dn' : 'up');
+
+  // Chart évals / semaine
+  const weekCounts = {};
+  evals.forEach(e => { const w = getWeekKey(e.date); weekCounts[w] = (weekCounts[w] || 0) + 1; });
+  const sortedWeeks = Object.keys(weekCounts).sort((a,b) => parseInt(a.slice(1)) - parseInt(b.slice(1))).slice(-7);
+  const weekVals = sortedWeeks.map(w => weekCounts[w]);
+  renderEvalChart(sortedWeeks, weekVals);
+
+  // Satisfaction donut
+  const satCounts = { tres_sat: 0, sat: 0, neutre: 0, insatisfait: 0 };
+  evals.forEach(e => { if (e.sat && satCounts[e.sat] !== undefined) satCounts[e.sat]++; });
+  const total = Object.values(satCounts).reduce((a,b) => a+b, 0);
+  const positif = total ? Math.round(((satCounts.tres_sat + satCounts.sat) / total) * 100) : 0;
+  document.getElementById('sat-pct').textContent = total ? positif + '%' : '—';
+  renderSatChart(satCounts, total);
+
+  // Allo bars
+  const grilleCounts = {};
+  evals.filter(e => e.allo === 'oui').forEach(e => {
+    grilleCounts[e.grille] = (grilleCounts[e.grille] || 0) + 1;
+  });
+  const maxG = Math.max(...Object.values(grilleCounts), 1);
+  const colors = ['','alt','alt2','','alt'];
+  const alloBarsEl = document.getElementById('alloBars');
+  alloBarsEl.innerHTML = '';
+  if (!Object.keys(grilleCounts).length) {
+    alloBarsEl.innerHTML = '<div style="color:var(--muted);font-family:var(--font-m);font-size:10px;text-transform:uppercase;padding:20px 0">Aucune insertion Allobrain</div>';
+  } else {
+    Object.entries(grilleCounts).sort((a,b)=>b[1]-a[1]).forEach(([g,v],i) => {
+      const pct = Math.round((v/maxG)*100);
+      const clr = ['var(--amber)','var(--cyan)','var(--purple)','var(--amber)','var(--cyan)'][i%5];
+      alloBarsEl.innerHTML += `<div class="allo-row">
+        <div class="allo-row-hd"><span class="allo-nm">${g.replace('Grille ','')}</span><span class="allo-v">${v}</span></div>
+        <div class="allo-track"><div class="allo-fill" data-target="${pct}%" style="width:0%;background:${clr}"></div></div>
+      </div>`;
+    });
+    setTimeout(() => { document.querySelectorAll('.allo-fill').forEach(el => el.style.width = el.dataset.target); }, 100);
+  }
+
+  // Cartographie agents
+  const agentMap = {};
+  evals.forEach(e => {
+    if (!agentMap[e.agent]) agentMap[e.agent] = { scores:[], ecarts:new Set(), plan:'—', statut:'pend', count:0 };
+    agentMap[e.agent].scores.push(e.score);
+    e.ecarts.forEach(ec => agentMap[e.agent].ecarts.add(ec));
+    agentMap[e.agent].plan = e.plan || '—';
+    agentMap[e.agent].statut = e.statut;
+    agentMap[e.agent].count++;
+  });
+  const tbody = document.getElementById('cartoBody');
+  tbody.innerHTML = '';
+  if (!Object.keys(agentMap).length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Aucun agent évalué</td></tr>';
+    return;
+  }
+  Object.entries(agentMap).forEach(([name, data]) => {
+    const avg2 = Math.round(data.scores.reduce((a,b)=>a+b,0) / data.scores.length);
+    const clr = avg2 >= 88 ? 'var(--green)' : avg2 >= 70 ? 'var(--amber)' : 'var(--red)';
+    const ec = [...data.ecarts].length ? [...data.ecarts].map(e=>`<span class="ecart-pill">${e}</span>`).join('') : '<span style="color:var(--muted);font-size:9px">Aucun</span>';
+    const stMap = {done:'tag done',pend:'tag pend',crit:'tag crit'};
+    const stLbl = {done:'✓ Clôturé',pend:'⏳ En cours',crit:'⚠ Critique'};
+    tbody.innerHTML += `<tr>
+      <td><span class="ag-name">${name}</span></td>
+      <td><span style="font-family:var(--font-m);font-size:13px;font-weight:700;color:${clr}">${avg2}%</span><div class="sc-bar"><div class="sc-fill" style="width:${avg2}%;background:${clr}"></div></div></td>
+      <td><span style="color:var(--muted)">${data.count}</span></td>
+      <td>${ec}</td>
+      <td><span style="font-size:9px">${data.plan.substring(0,60)}${data.plan.length>60?'…':''}</span></td>
+      <td><span class="${stMap[data.statut]}">${stLbl[data.statut]}</span></td>
+    </tr>`;
+  });
+}
+
+function renderEmptyDash() {
+  ['kpi-evals','kpi-allo','kpi-agents','kpi-pa'].forEach(id => document.getElementById(id).textContent = '0');
+  document.getElementById('kpi-moy').textContent = '—';
+  document.getElementById('cartoBody').innerHTML = '<tr class="empty-row"><td colspan="6">Aucune évaluation · Allez sur <strong>Saisie Évaluation</strong> pour commencer</td></tr>';
+  document.getElementById('alloBars').innerHTML = '<div style="color:var(--muted);font-family:var(--font-m);font-size:10px;text-transform:uppercase;padding:20px 0">Aucune donnée</div>';
+  document.getElementById('sat-pct').textContent = '—';
+  document.getElementById('sat-leg').innerHTML = '';
+  renderEvalChart(['—'], [0]);
+  renderSatChart({tres_sat:0,sat:0,neutre:0,insatisfait:1}, 1);
+}
+
+function renderEvalChart(labels, data) {
+  const ctx = document.getElementById('evalChart');
+  if (evalChartInst) evalChartInst.destroy();
+  evalChartInst = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        { type:'bar', label:'Évaluations', data, backgroundColor:'rgba(0,229,255,.18)', borderColor:'var(--cyan)', borderWidth:1.5, borderRadius:2 },
+        { type:'line', label:'Objectif 300', data:labels.map(()=>300), borderColor:'rgba(255,171,0,.4)', borderWidth:1.5, borderDash:[6,4], pointRadius:0 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:'#4d6a8a', font:{ family:'Space Mono', size:9 }, boxWidth:10, padding:14 } }, tooltip:{ backgroundColor:'#0f1623', borderColor:'#1e2d45', borderWidth:1, titleColor:'#00e5ff', bodyColor:'#dce8f8', titleFont:{family:'Space Mono',size:10}, bodyFont:{family:'Space Mono',size:10} } },
+      scales:{ x:{ grid:{color:'rgba(30,45,69,.8)'}, ticks:{color:'#4d6a8a',font:{family:'Space Mono',size:9}} }, y:{ grid:{color:'rgba(30,45,69,.8)'}, ticks:{color:'#4d6a8a',font:{family:'Space Mono',size:9}} } }
+    }
+  });
+}
+
+function renderSatChart(satCounts, total) {
+  const ctx = document.getElementById('satChart');
+  if (satChartInst) satChartInst.destroy();
+  const colors = { tres_sat:'#00e676', sat:'#00e5ff', neutre:'#ffab00', insatisfait:'#ff3d71' };
+  const labels = { tres_sat:'Très satisfait', sat:'Satisfait', neutre:'Neutre', insatisfait:'Insatisfait' };
+  satChartInst = new Chart(ctx, {
+    type:'doughnut',
+    data: {
+      labels: Object.keys(satCounts).map(k=>labels[k]),
+      datasets:[{ data: Object.values(satCounts), backgroundColor: Object.keys(satCounts).map(k=>colors[k]), borderColor:'#07090f', borderWidth:3 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, cutout:'72%', plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#0f1623',borderColor:'#1e2d45',borderWidth:1,titleColor:'#dce8f8',bodyColor:'#dce8f8',titleFont:{family:'Space Mono',size:10},bodyFont:{family:'Space Mono',size:9}} } }
+  });
+  // Legend
+  const leg = document.getElementById('sat-leg');
+  leg.innerHTML = '';
+  Object.entries(satCounts).forEach(([k,v]) => {
+    const pct = total ? Math.round((v/total)*100) : 0;
+    leg.innerHTML += `<div class="sat-li"><div class="sat-dot" style="background:${colors[k]}"></div><div class="sat-nm">${labels[k]}</div><div class="sat-pct" style="color:${colors[k]}">${pct}%</div></div>`;
+  });
+}
+
+/* ══════════════ HISTORY ══════════════ */
+function renderHistory() {
+  updateBadge();
+  // Coach filters
+  const coaches = ['all', ...new Set(evals.map(e => e.coach))];
+  const filterEl = document.getElementById('coachFilters');
+  filterEl.innerHTML = '';
+  coaches.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'hist-filter' + (histFilter === c ? ' active' : '');
+    btn.textContent = c === 'all' ? 'Tous les coachs' : c;
+    btn.onclick = () => { histFilter = c; renderHistory(); };
+    filterEl.appendChild(btn);
+  });
+
+  const filtered = histFilter === 'all' ? evals : evals.filter(e => e.coach === histFilter);
+  const tbody = document.getElementById('histBody');
+  tbody.innerHTML = '';
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><div class="es-icon">📋</div>Aucune évaluation enregistrée<br>Allez sur "Saisie Évaluation" pour commencer</div></td></tr>';
+    return;
+  }
+
+  const satLabel = { tres_sat:'😄 Très satisfait', sat:'😊 Satisfait', neutre:'😐 Neutre', insatisfait:'😞 Insatisfait', '':'—' };
+  const satColor = { tres_sat:'var(--green)', sat:'var(--cyan)', neutre:'var(--amber)', insatisfait:'var(--red)', '':'var(--muted)' };
+  const stLbl = {done:'✓ Clôturé',pend:'⏳ En cours',crit:'⚠ Critique'};
+  const stCls = {done:'tag done',pend:'tag pend',crit:'tag crit'};
+
+  [...filtered].reverse().forEach(e => {
+    const d = new Date(e.date).toLocaleDateString('fr-FR');
+    tbody.innerHTML += `<tr>
+      <td style="color:var(--muted)">${d}</td>
+      <td style="font-weight:700">${e.coach}</td>
+      <td>${e.agent}</td>
+      <td style="color:var(--muted)">${e.grille.replace('Grille ','')}</td>
+      <td><span style="color:${e.score>=88?'var(--green)':e.score>=70?'var(--amber)':'var(--red)';};font-weight:700">${e.score}%</span></td>
+      <td style="color:${satColor[e.sat||'']}">${satLabel[e.sat||'']}</td>
+      <td><span class="${stCls[e.statut]}">${stLbl[e.statut]}</span></td>
+      <td><span style="color:${e.allo==='oui'?'var(--green)':'var(--red)'}">${e.allo==='oui'?'✅ Oui':'❌ Non'}</span></td>
+      <td><button class="del-btn" onclick="deleteEval(${e.id})">Suppr.</button></td>
+    </tr>`;
+  });
+
+  document.getElementById('lastUpdate').textContent = `Dernière saisie : ${new Date([...filtered].pop().date).toLocaleDateString('fr-FR')}`;
+}
+
+async function deleteEval(id) {
+  if (!confirm('Supprimer cette évaluation ?')) return;
+  evals = evals.filter(e => e.id !== id);
+  await saveData();
+  renderHistory();
+  renderDashboard();
+  showToast('🗑 Évaluation supprimée', 'ok');
+}
+
+async function clearAll() {
+  if (!confirm('Effacer toutes les évaluations ? Cette action est irréversible.')) return;
+  evals = [];
+  await saveData();
+  renderHistory();
+  renderDashboard();
+  showToast('🗑 Historique effacé', 'ok');
+}
+
+function exportCSV() {
+  if (!evals.length) { showToast('Aucune donnée à exporter', 'error'); return; }
+  const headers = ['Date','Coach','Agent','Grille','Score','Écarts','Plan','Statut','Allobrain','Satisfaction'];
+  const rows = evals.map(e => [e.date,e.coach,e.agent,e.grille,e.score,e.ecarts.join(';'),e.plan,e.statut,e.allo,e.sat||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download = `evaluations_qualite_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  showToast('✅ Export CSV téléchargé', 'ok');
+}
+
+function updateBadge() {
+  document.getElementById('histBadge').textContent = evals.length;
+}
+
+/* ══════════════ TOAST ══════════════ */
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = type === 'ok' ? 'var(--green)' : 'var(--red)';
+  t.style.color = type === 'ok' ? 'var(--green)' : 'var(--red)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ══════════════ INIT ══════════════ */
+async function init() {
+  // Date par défaut
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('currentDate').textContent = new Date().toLocaleDateString('fr-FR');
+  await loadData();
+  updateBadge();
+  renderDashboard();
+}
+init();
+</script>
+</body>
+</html>
